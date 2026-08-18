@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Administrasi Guru Mapel</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #f9fafb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+
+  /* ======================================================
+     GANTI LINK DI SINI kalau URL Web App Apps Script berubah.
+     Ini SATU-SATUNYA tempat yang perlu diedit di file ini.
+     ====================================================== */
+
+  #app-frame {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: none;
+  }
+
+  #loading {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .spinner {
+    border: 3px solid #e5e7eb;
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading p { color: #6b7280; font-size: 13px; margin: 0; }
+
+  #setup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #setup .card {
+    max-width: 420px;
+    width: 100%;
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  #setup h1 { font-size: 16px; margin: 0 0 8px; color: #111827; }
+  #setup p { font-size: 13px; color: #6b7280; line-height: 1.6; margin: 0 0 12px; }
+  #setup code {
+    display: block;
+    background: #f3f4f6;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    word-break: break-all;
+    margin-bottom: 12px;
+  }
+  #setup input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  #setup button {
+    width: 100%;
+    background: #4f46e5;
+    color: #fff;
+    border: 0;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #setup .err { color: #dc2626; font-size: 12px; margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>Memuat aplikasi…</p>
+</div>
+
+<!-- Kalau belum ada URL yang tersimpan, tampilkan form ini sekali saja -->
+<div id="setup">
+  <div class="card">
+    <h1>Hubungkan ke Web App</h1>
+    <p>Tempel URL Web App Apps Script Anda (format <code style="display:inline">.../exec</code>) di bawah ini. Sekali disimpan, halaman ini akan langsung membuka aplikasi otomatis setiap kali dibuka lagi — sampai Anda ganti linknya.</p>
+    <input id="urlInput" type="url" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
+    <button onclick="simpanUrl()">Simpan &amp; Buka</button>
+    <p class="err" id="setupErr">URL tidak valid. Pastikan diawali https:// dan berasal dari script.google.com atau googleusercontent.com.</p>
+  </div>
+</div>
+
+<iframe id="app-frame" title="Administrasi Guru Mapel" allow="clipboard-write"></iframe>
+
+<script>
+  // Prioritas sumber URL, dari yang paling gampang diganti tanpa edit file:
+  // 1. Parameter ?url= di link (paling praktis kalau link Apps Script sering ganti)
+  // 2. URL yang sebelumnya disimpan di browser (localStorage)
+  // 3. Form manual di bawah, kalau dua di atas belum ada
+
+  function isUrlValid(u) {
+    try {
+      var parsed = new URL(u);
+      return parsed.protocol === 'https:' &&
+        (parsed.hostname.endsWith('script.google.com') || parsed.hostname.endsWith('googleusercontent.com'));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function bukaApp(url) {
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('loading').style.display = 'flex';
+    var frame = document.getElementById('app-frame');
+    frame.onload = function () {
+      document.getElementById('loading').style.display = 'none';
+      frame.style.display = 'block';
+    };
+    frame.src = url;
+  }
+
+  function simpanUrl() {
+    var input = document.getElementById('urlInput').value.trim();
+    if (!isUrlValid(input)) {
+      document.getElementById('setupErr').style.display = 'block';
+      return;
+    }
+    localStorage.setItem('appScriptUrl', input);
+    bukaApp(input);
+  }
+
+  (function init() {
+    var params = new URLSearchParams(window.location.search);
+    var fromQuery = params.get('url');
+    var fromStorage = localStorage.getItem('appScriptUrl');
+
+    var url = null;
+    if (fromQuery && isUrlValid(fromQuery)) {
+      url = fromQuery;
+      localStorage.setItem('appScriptUrl', url); // ingat untuk kunjungan berikutnya
+    } else if (fromStorage && isUrlValid(fromStorage)) {
+      url = fromStorage;
+    }
+
+    if (url) {
+      bukaApp(url);
+    } else {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('setup').style.display = 'flex';
+    }
+  })();
+</script>
+
+</body>
+</html>
